@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cybur Hunt — Join</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+</head>
+<body>
+  <div class="container">
+    <header>
+      <a class="brand" href="/">CYBUR HUNT</a>
+      <div class="nav-links">
+        <a href="/leaderboard">Leaderboard</a>
+        <a href="/admin">Admin</a>
+      </div>
+    </header>
+
+    <div class="card">
+      <h1>Enter the Hunt</h1>
+      <p class="muted">Choose a unique player name (max {{ max_players }} players).</p>
+
+      {% if status != 'lobby' %}
+        <div class="feedback show error">Game is already {{ status }}. New joins are closed.</div>
+      {% else %}
+        <form id="join-form" style="margin-top: 16px;">
+          <input id="player-name" type="text" maxlength="30" placeholder="Your handle or name" autocomplete="off" required />
+          <button type="submit">Join Lobby</button>
+        </form>
+        <div id="join-feedback" class="feedback"></div>
+      {% endif %}
+    </div>
+  </div>
+  <script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>
+

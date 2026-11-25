@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Level {{ level.id }} — Cybur Hunt</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+</head>
+<body>
+  <div class="container">
+    <header>
+      <span class="brand">LEVEL {{ level.id }} / {{ total_levels }}</span>
+      <div class="nav-links">
+        <span id="hints-used" class="badge">Hints: {{ player.hints_used }}</span>
+        <a href="/leaderboard">Board</a>
+      </div>
+    </header>
+
+    <div class="card">
+      <h1>{{ level.title }}</h1>
+      <div class="clue-box">{{ level.clue_text }}</div>
+
+      {% if level.asset %}
+        <div class="asset-wrap">
+          <img src="{{ url_for('static', filename=level.asset) }}" alt="Level {{ level.id }} signal" />
+        </div>
+      {% endif %}
+
+      <form id="submit-form">
+        <input id="answer-input" type="text" maxlength="100" placeholder="Enter your answer..." autocomplete="off" autocapitalize="none" required />
+        <button type="submit">Submit Answer</button>
+      </form>
+
+      <button id="hint-btn" type="button" class="secondary">Show Hint</button>
+
+      <div id="submit-feedback" class="feedback"></div>
+      <div id="hint-box" class="feedback {% if hint_text %}show hint{% endif %}">
+        {% if hint_text %}Hint: {{ hint_text }}{% endif %}
+      </div>
+    </div>
+  </div>
+  <script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>
+

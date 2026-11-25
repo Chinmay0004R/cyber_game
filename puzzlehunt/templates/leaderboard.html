@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cybur Hunt — Leaderboard</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+</head>
+<body>
+  <div class="container wide">
+    <header>
+      <a class="brand" href="/">CYBUR HUNT — LEADERBOARD</a>
+      <div class="nav-links">
+        <span id="lb-status" class="badge">LOBBY</span>
+        <a href="/level">Back to Game</a>
+      </div>
+    </header>
+
+    <div class="card">
+      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+        <h2>Live Standings</h2>
+        <span id="lb-updated" class="muted">Auto-refreshes every 10s</span>
+      </div>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Rank</th>
+            <th>Player</th>
+            <th>Progress</th>
+            <th>Time</th>
+            <th>Hints</th>
+          </tr>
+        </thead>
+        <tbody id="leaderboard-body">
+          <tr><td colspan="5" class="muted">Loading...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>
+

@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cybur Hunt — Admin</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+</head>
+<body>
+  <div class="container wide">
+    <header>
+      <a class="brand" href="/">CYBUR HUNT — ADMIN</a>
+      <div class="nav-links">
+        <a href="/leaderboard">Leaderboard</a>
+        {% if is_admin %}
+          <button id="btn-logout" class="secondary small" style="margin-top:0;">Logout</button>
+        {% endif %}
+      </div>
+    </header>
+
+    {% if not is_admin %}
+      <div class="card" style="max-width:420px; margin:40px auto;">
+        <h1>Admin Login</h1>
+        <form id="admin-login-form" style="margin-top:14px;">
+          <input id="admin-password" type="password" placeholder="Admin password" required />
+          <button type="submit">Sign In</button>
+        </form>
+        <div id="admin-login-feedback" class="feedback"></div>
+      </div>
+    {% else %}
+      <div id="admin-dashboard">
+        <div class="card">
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+            <div>
+              <h2>Game Controls</h2>
+              <p id="admin-player-count" class="muted">Loading...</p>
+            </div>
+            <span id="admin-status-badge" class="badge">LOBBY</span>
+          </div>
+
+          <div class="row-actions">
+            <button id="btn-start" type="button">Start Game</button>
+            <button id="btn-finish" type="button" class="secondary" style="margin-top:0;">Finish Game</button>
+            <button id="btn-reset" type="button" class="danger">Reset All</button>
+          </div>
+          <div id="admin-feedback" class="feedback"></div>
+        </div>
+
+        <div class="card">
+          <h2>Live Player Progress</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>Player</th>
+                <th>Progress</th>
+                <th>Time</th>
+                <th>Attempts</th>
+                <th>Hints</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="admin-players-body">
+              <tr><td colspan="6" class="muted">Loading...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    {% endif %}
+  </div>
+  <script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>
+

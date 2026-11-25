@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cybur Hunt — Lobby</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+</head>
+<body>
+  <div class="container" id="lobby-root">
+    <header>
+      <a class="brand" href="/">CYBUR HUNT</a>
+      <span class="badge">{{ player_name }}</span>
+    </header>
+
+    <div class="card">
+      <h1>Waiting Room</h1>
+      <p id="lobby-count" class="muted">Loading... (0 / {{ max_players }})</p>
+      <p class="muted" style="margin-top: 6px;">Game will start automatically when the host presses Start.</p>
+      <ul id="lobby-players" class="player-list"></ul>
+    </div>
+
+    <div class="nav-links">
+      <a href="/leaderboard">View Leaderboard</a>
+    </div>
+  </div>
+  <script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>
+
