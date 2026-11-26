@@ -90,24 +90,46 @@ if (lobbyRoot) {
 const submitForm = document.getElementById("submit-form");
 if (submitForm) {
   const answerInput = document.getElementById("answer-input");
+  const submitButton = submitForm.querySelector("button[type='submit']");
   const fb = document.getElementById("submit-feedback");
   const hintBtn = document.getElementById("hint-btn");
   const hintBox = document.getElementById("hint-box");
   const hintsUsedEl = document.getElementById("hints-used");
+  const submissionPausedEl = document.getElementById("submission-paused");
+  const hintPausedEl = document.getElementById("hint-paused");
+  let submissionPending = false;
+  let hintPending = false;
+
+  async function refreshPlayerControls() {
+    try {
+      const res = await fetch("/api/leaderboard");
+      if (!res.ok) return;
+      const data = await res.json();
+      answerInput.disabled = !data.submissions_enabled;
+      submitButton.disabled = submissionPending || !data.submissions_enabled;
+      hintBtn.disabled = hintPending || !data.hints_enabled;
+      submissionPausedEl.hidden = data.submissions_enabled;
+      hintPausedEl.hidden = data.hints_enabled;
+    } catch (_) {}
+  }
+  refreshPlayerControls();
+  setInterval(refreshPlayerControls, 3000);
 
   submitForm.addEventListener("submit", async (e) => {
     e.preventDefault();
-    const btn = submitForm.querySelector("button[type='submit']");
-    btn.disabled = true;
+    submissionPending = true;
+    submitButton.disabled = true;
     let res;
     try {
       res = await postJSON("/api/submit", { answer: answerInput.value });
     } catch (_) {
+      submissionPending = false;
       showFeedback(fb, "Couldn't send your answer. Check your connection and try again.", "error");
-      btn.disabled = false;
+      refreshPlayerControls();
       return;
     }
-    btn.disabled = false;
+    submissionPending = false;
+    refreshPlayerControls();
 
     if (!res.ok) {
       const message = res.status === 429
@@ -129,6 +151,7 @@ if (submitForm) {
 
   if (hintBtn) {
     hintBtn.addEventListener("click", async () => {
+      hintPending = true;
       hintBtn.disabled = true;
       try {
         const res = await postJSON("/api/hint");
@@ -141,7 +164,8 @@ if (submitForm) {
       } catch (_) {
         showFeedback(hintBox, "Couldn't reach the hint service. Check your connection and try again.", "error");
       } finally {
-        hintBtn.disabled = false;
+        hintPending = false;
+        refreshPlayerControls();
       }
     });
   }
@@ -224,6 +248,8 @@ if (adminDashboard) {
       statusEl.textContent = data.status.toUpperCase();
       statusEl.className = `badge ${data.status}`;
       countEl.textContent = `${data.players.length} / ${data.max_players} players (min ${data.min_players} to start)`;
+      document.getElementById("btn-toggle-hints").textContent = data.hints_enabled ? "Pause hints" : "Resume hints";
+      document.getElementById("btn-toggle-submissions").textContent = data.submissions_enabled ? "Pause submissions" : "Resume submissions";
 
       if (data.players.length === 0) {
         tbody.innerHTML = `<tr><td colspan="6" class="muted">Waiting for players to join...</td></tr>`;
@@ -260,6 +286,28 @@ if (adminDashboard) {
       refreshAdmin();
     } else {
       showFeedback(fb, res.data.error || "Cannot start", "error");
+    }
+  });
+
+  document.getElementById("btn-toggle-hints").addEventListener("click", async (event) => {
+    const enabled = event.currentTarget.textContent === "Resume hints";
+    const res = await postJSON("/admin/settings", { hints_enabled: enabled });
+    if (res.ok) {
+      showFeedback(fb, enabled ? "Hints resumed." : "Hints paused.", "success");
+      refreshAdmin();
+    } else {
+      showFeedback(fb, res.data.error || "Couldn't update hints.", "error");
+    }
+  });
+
+  document.getElementById("btn-toggle-submissions").addEventListener("click", async (event) => {
+    const enabled = event.currentTarget.textContent === "Resume submissions";
+    const res = await postJSON("/admin/settings", { submissions_enabled: enabled });
+    if (res.ok) {
+      showFeedback(fb, enabled ? "Answer submissions resumed." : "Answer submissions paused.", "success");
+      refreshAdmin();
+    } else {
+      showFeedback(fb, res.data.error || "Couldn't update submissions.", "error");
     }
   });
 

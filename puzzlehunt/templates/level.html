@@ -38,12 +38,14 @@
 
       <form id="submit-form">
         <label for="answer-input">Your answer</label>
-        <input id="answer-input" type="text" maxlength="100" placeholder="Type your answer…" autocomplete="off" autocapitalize="none" aria-describedby="answer-help" required />
+        <input id="answer-input" type="text" maxlength="100" placeholder="Type your answer…" autocomplete="off" autocapitalize="none" aria-describedby="answer-help" {% if not submissions_enabled %}disabled{% endif %} required />
         <p id="answer-help" class="field-help">Not case-sensitive. You can revise your answer any time.</p>
-        <button type="submit"><span>Check answer</span><span aria-hidden="true">→</span></button>
+        <button type="submit" {% if not submissions_enabled %}disabled{% endif %}><span>Check answer</span><span aria-hidden="true">→</span></button>
       </form>
 
-      <button id="hint-btn" type="button" class="secondary">💡 Get a hint</button>
+      <p id="submission-paused" class="field-help" {% if submissions_enabled %}hidden{% endif %}>Answer submissions are paused by the host.</p>
+      <button id="hint-btn" type="button" class="secondary" {% if not hints_enabled %}disabled{% endif %}>💡 Get a hint</button>
+      <p id="hint-paused" class="field-help" {% if hints_enabled %}hidden{% endif %}>Hints are paused by the host.</p>
 
       <div id="submit-feedback" class="feedback" role="status" aria-live="polite"></div>
       <div id="hint-box" class="feedback {% if hint_text %}show hint{% endif %}">

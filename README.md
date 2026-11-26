@@ -17,7 +17,7 @@ cybur_hunt/
     ├── schema.sql              # Database schema (players, levels, submissions, game_state)
     ├── seed_levels.py          # Hashes answers (SHA-256) and seeds levels into SQLite
     ├── puzzlehunt.db           # SQLite database (created by seed_levels.py)
-    ├── requirements.txt        # Python dependencies (flask>=2.3.0)
+    ├── requirements.txt        # Python dependencies (Flask and openpyxl)
     ├── levels/
     │   ├── __init__.py         # Auto-discovers and sorts LEVEL dicts by id
     │   ├── level_01.py ... level_10.py
@@ -56,7 +56,8 @@ The `game_state` table (single row, `id = 1`) controls what players can do:
    - The server always reads `current_level` from the player's database record (never from the client).
    - **Rate Limiting**: `POST /api/submit` enforces a `RATE_LIMIT_SECONDS` (3s) cooldown per player, returning HTTP `429` (`"Slow down"`) if exceeded.
    - **Answer Verification**: Submitted answers are stripped, lowercased, and compared against `levels.answer_hash` using SHA-256. Every attempt is logged in `submissions`.
-   - **Hints**: Clicking **Show Hint** calls `POST /api/hint`, revealing the level's hint and incrementing `hints_used` once per level.
+   - **Hints**: Clicking **Get a hint** calls `POST /api/hint`, revealing the level's hint and incrementing `hints_used` once per level. Admins can pause and resume hints independently.
+   - **Host controls**: Admins can pause and resume answer submissions independently of hints. Both controls are enforced by the server.
    - **Completion**: Solving Level 10 sets `finish_time` on the player and redirects them to `/leaderboard`.
 5. **Leaderboard (`/leaderboard`)**: Auto-refreshes every 10 seconds (`GET /api/leaderboard`). Players are ranked by:
    1. Finishers first (`finish_time IS NOT NULL`)
@@ -127,6 +128,8 @@ The server binds to `0.0.0.0:5000` so devices on the same Wi-Fi/LAN can connect 
 ### Admin Controls
 - **Start Game**: Transitions from `lobby` to `running` (requires at least 2 players).
 - **Finish Game**: Transitions to `finished` and locks submissions.
+- **Pause / Resume hints and submissions**: Independently disables or re-enables hints and answer submissions. Settings persist until changed or the game is reset.
+- **Download results (.xlsx)**: Downloads ranked player standings, progress, elapsed time, hints used, and total attempts as an Excel workbook.
 - **Kick**: Removes a specific player and their submissions, freeing their lobby slot.
 - **Reset All**: Clears all players and submissions and returns `game_state` to `lobby`.
 

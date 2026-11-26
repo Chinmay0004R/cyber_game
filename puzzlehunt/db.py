@@ -18,5 +18,10 @@ def init_db():
     db = get_db()
     with open(SCHEMA_PATH, "r", encoding="utf-8") as f:
         db.executescript(f.read())
+    columns = {row["name"] for row in db.execute("PRAGMA table_info(game_state)")}
+    if "hints_enabled" not in columns:
+        db.execute("ALTER TABLE game_state ADD COLUMN hints_enabled INTEGER NOT NULL DEFAULT 1")
+    if "submissions_enabled" not in columns:
+        db.execute("ALTER TABLE game_state ADD COLUMN submissions_enabled INTEGER NOT NULL DEFAULT 1")
     db.close()
 

@@ -31,7 +31,9 @@ CREATE TABLE IF NOT EXISTS submissions (
 CREATE TABLE IF NOT EXISTS game_state (
     id INTEGER PRIMARY KEY CHECK (id = 1),
     status TEXT NOT NULL DEFAULT 'lobby',   -- lobby | running | finished
-    started_at REAL
+    started_at REAL,
+    hints_enabled INTEGER NOT NULL DEFAULT 1,
+    submissions_enabled INTEGER NOT NULL DEFAULT 1
 );
 
 INSERT OR IGNORE INTO game_state (id) VALUES (1);

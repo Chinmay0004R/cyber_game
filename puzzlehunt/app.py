@@ -1,12 +1,15 @@
 import hashlib
+import io
 import time
-from flask import Flask, jsonify, redirect, render_template, request, session, url_for
+from flask import Flask, jsonify, redirect, render_template, request, send_file, session, url_for
+from openpyxl import Workbook
 
 import config
-from db import get_db
+from db import get_db, init_db
 
 app = Flask(__name__)
 app.secret_key = config.SECRET_KEY
+init_db()
 
 
 def now() -> float:
@@ -100,6 +103,8 @@ def level_page():
         level=lvl,
         total_levels=total_levels,
         hint_text=hint_text,
+        hints_enabled=bool(st["hints_enabled"]),
+        submissions_enabled=bool(st["submissions_enabled"]),
     )
 
 
@@ -164,6 +169,8 @@ def api_submit():
     st = get_state(db)
     if not p or st["status"] != "running" or p["finish_time"] is not None:
         return jsonify(error="Game has not started"), 403
+    if not st["submissions_enabled"]:
+        return jsonify(error="Answer submissions are paused by the host"), 403
 
     t = now()
     if t - p["last_attempt_at"] < config.RATE_LIMIT_SECONDS:
@@ -215,6 +222,8 @@ def api_hint():
     st = get_state(db)
     if not p or st["status"] != "running" or p["finish_time"] is not None:
         return jsonify(error="Game is not active"), 403
+    if not st["hints_enabled"]:
+        return jsonify(error="Hints are paused by the host"), 403
 
     lvl = db.execute("SELECT id, hint_text FROM levels WHERE id = ?", (p["current_level"],)).fetchone()
     if not lvl:
@@ -267,6 +276,8 @@ def api_leaderboard():
         status=st["status"],
         started_at=started_at,
         total_levels=total_levels,
+        hints_enabled=bool(st["hints_enabled"]),
+        submissions_enabled=bool(st["submissions_enabled"]),
         players=players,
     )
 
@@ -340,7 +351,68 @@ def admin_status():
         min_players=config.MIN_PLAYERS,
         max_players=config.MAX_PLAYERS,
         total_levels=total_levels,
+        hints_enabled=bool(st["hints_enabled"]),
+        submissions_enabled=bool(st["submissions_enabled"]),
         players=players,
+    )
+
+
+@app.get("/admin/results.xlsx")
+def admin_results():
+    if not session.get("admin"):
+        return jsonify(error="Unauthorized"), 403
+
+    db = get_db()
+    st = get_state(db)
+    total_levels = get_total_levels(db)
+    rows = db.execute(
+        """SELECT p.name, p.current_level, p.level_reached_at, p.finish_time, p.hints_used,
+                  COUNT(s.id) AS attempts
+           FROM players p
+           LEFT JOIN submissions s ON s.player_id = p.id
+           GROUP BY p.id
+           ORDER BY
+               (p.finish_time IS NOT NULL) DESC,
+               p.current_level DESC,
+               COALESCE(p.finish_time, p.level_reached_at, 9e18) ASC,
+               p.id ASC"""
+    ).fetchall()
+
+    workbook = Workbook()
+    sheet = workbook.active
+    sheet.title = "Results"
+    sheet.append(["Rank", "Player", "Progress", "Finished", "Elapsed seconds", "Hints used", "Attempts"])
+    for rank, row in enumerate(rows, start=1):
+        ref_time = row["finish_time"] or row["level_reached_at"]
+        elapsed = (ref_time - st["started_at"]) if (st["started_at"] and ref_time) else None
+        progress = "FINISHED" if row["finish_time"] is not None else f"Level {row['current_level']} / {total_levels}"
+        player_name = row["name"]
+        if player_name.lstrip(" \t\r\n").startswith(("=", "+", "-", "@")):
+            player_name = "'" + player_name
+        sheet.append(
+            [
+                rank,
+                player_name,
+                progress,
+                "Yes" if row["finish_time"] is not None else "No",
+                round(elapsed, 1) if elapsed is not None else None,
+                row["hints_used"],
+                row["attempts"],
+            ]
+        )
+    sheet.freeze_panes = "A2"
+    sheet.auto_filter.ref = sheet.dimensions
+    for column, width in {"A": 10, "B": 24, "C": 24, "D": 12, "E": 20, "F": 14, "G": 14}.items():
+        sheet.column_dimensions[column].width = width
+
+    output = io.BytesIO()
+    workbook.save(output)
+    output.seek(0)
+    return send_file(
+        output,
+        as_attachment=True,
+        download_name="puzzlehunt-results.xlsx",
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     )
 
 
@@ -361,6 +433,31 @@ def admin_finish():
         return "", 403
     db = get_db()
     db.execute("UPDATE game_state SET status = 'finished' WHERE id = 1")
+    return jsonify(ok=True)
+
+
+@app.post("/admin/settings")
+def admin_settings():
+    if not session.get("admin"):
+        return jsonify(error="Unauthorized"), 403
+    data = request.get_json(silent=True) or {}
+    if not isinstance(data, dict):
+        return jsonify(error="Settings must be a JSON object"), 400
+    settings = {}
+    for key in ("hints_enabled", "submissions_enabled"):
+        if key in data:
+            if type(data[key]) is not bool:
+                return jsonify(error=f"{key} must be a boolean"), 400
+            settings[key] = int(data[key])
+    if not settings:
+        return jsonify(error="No settings provided"), 400
+
+    db = get_db()
+    assignments = ", ".join(f"{key} = ?" for key in settings)
+    db.execute(
+        f"UPDATE game_state SET {assignments} WHERE id = 1",
+        tuple(settings.values()),
+    )
     return jsonify(ok=True)
 
 
@@ -385,7 +482,11 @@ def admin_reset():
     db = get_db()
     db.execute("DELETE FROM submissions")
     db.execute("DELETE FROM players")
-    db.execute("UPDATE game_state SET status = 'lobby', started_at = NULL WHERE id = 1")
+    db.execute(
+        """UPDATE game_state
+           SET status = 'lobby', started_at = NULL, hints_enabled = 1, submissions_enabled = 1
+           WHERE id = 1"""
+    )
     return jsonify(ok=True)
 
 
