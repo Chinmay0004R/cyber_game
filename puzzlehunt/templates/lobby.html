@@ -8,21 +8,31 @@
 </head>
 <body>
   <div class="container" id="lobby-root">
-    <header>
+    <header class="site-header">
       <a class="brand" href="/">CYBUR HUNT</a>
-      <span class="badge">{{ player_name }}</span>
+      <span class="badge player-badge">👋 {{ player_name }}</span>
     </header>
 
-    <div class="card">
-      <h1>Waiting Room</h1>
-      <p id="lobby-count" class="muted">Loading... (0 / {{ max_players }})</p>
-      <p class="muted" style="margin-top: 6px;">Game will start automatically when the host presses Start.</p>
-      <ul id="lobby-players" class="player-list"></ul>
-    </div>
+    <main>
+      <section class="hero-card lobby-hero">
+        <div class="eyebrow"><span class="pulse-dot"></span> YOU’RE IN THE HUNT</div>
+        <h1>Good luck, {{ player_name }}<span>!</span></h1>
+        <p class="hero-copy">The game will begin as soon as the host hits start. In the meantime, get your team together and warm up those puzzle-solving skills.</p>
+      </section>
 
-    <div class="nav-links">
-      <a href="/leaderboard">View Leaderboard</a>
-    </div>
+      <section class="card lobby-card">
+        <div class="section-heading">
+          <div>
+            <h2>Players in the lobby</h2>
+            <p class="muted">This list updates automatically.</p>
+          </div>
+          <span id="lobby-count" class="badge" aria-live="polite">Loading…</span>
+        </div>
+        <ul id="lobby-players" class="player-list" aria-live="polite"></ul>
+        <div id="lobby-feedback" class="feedback" role="status" aria-live="polite"></div>
+      </section>
+      <a class="text-link" href="/leaderboard">🏆 Take a peek at the leaderboard</a>
+    </main>
   </div>
   <script src="{{ url_for('static', filename='app.js') }}"></script>
 </body>

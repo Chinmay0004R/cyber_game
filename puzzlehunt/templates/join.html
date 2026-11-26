@@ -8,28 +8,45 @@
 </head>
 <body>
   <div class="container">
-    <header>
+    <header class="site-header">
       <a class="brand" href="/">CYBUR HUNT</a>
       <div class="nav-links">
-        <a href="/leaderboard">Leaderboard</a>
-        <a href="/admin">Admin</a>
+        <a href="/leaderboard">🏆 Leaderboard</a>
       </div>
     </header>
 
-    <div class="card">
-      <h1>Enter the Hunt</h1>
-      <p class="muted">Choose a unique player name (max {{ max_players }} players).</p>
+    <main>
+      <section class="hero-card">
+        <div class="eyebrow"><span class="pulse-dot"></span> A PLAYFUL PUZZLE ADVENTURE</div>
+        <h1>Crack the clues.<br /><span>Beat the clock.</span></h1>
+        <p class="hero-copy">Follow the trail, solve each challenge, and race your friends to the finish.</p>
+        <div class="how-to-play">
+          <div><span class="step-number">01</span><span><strong>Pick a handle</strong><small>Make it yours — up to 30 characters.</small></span></div>
+          <div><span class="step-number">02</span><span><strong>Solve the clues</strong><small>Need a nudge? Hints are always available.</small></span></div>
+          <div><span class="step-number">03</span><span><strong>Claim your place</strong><small>Every solved level moves you up the board.</small></span></div>
+        </div>
+      </section>
 
       {% if status != 'lobby' %}
-        <div class="feedback show error">Game is already {{ status }}. New joins are closed.</div>
+        <div class="card">
+          <div class="feedback show error" role="status">This hunt is {{ status }}. New joins are closed for now.</div>
+          <a class="btn secondary-link" href="/leaderboard">See the leaderboard</a>
+        </div>
       {% else %}
-        <form id="join-form" style="margin-top: 16px;">
-          <input id="player-name" type="text" maxlength="30" placeholder="Your handle or name" autocomplete="off" required />
-          <button type="submit">Join Lobby</button>
-        </form>
-        <div id="join-feedback" class="feedback"></div>
+        <section class="card join-card">
+          <div>
+            <h2>Your adventure starts here</h2>
+            <p class="muted">The lobby holds up to {{ max_players }} players. Join now and get ready!</p>
+          </div>
+          <form id="join-form">
+            <label class="sr-only" for="player-name">Your player name</label>
+            <input id="player-name" type="text" maxlength="30" placeholder="Enter your player name" autocomplete="nickname" required />
+            <button type="submit"><span>Join the hunt</span><span aria-hidden="true">→</span></button>
+          </form>
+          <div id="join-feedback" class="feedback" role="status" aria-live="polite"></div>
+        </section>
       {% endif %}
-    </div>
+    </main>
   </div>
   <script src="{{ url_for('static', filename='app.js') }}"></script>
 </body>

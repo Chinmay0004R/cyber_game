@@ -9,35 +9,48 @@
 <body>
   <div class="container">
     <header>
-      <span class="brand">LEVEL {{ level.id }} / {{ total_levels }}</span>
+      <a class="brand" href="/">CYBUR HUNT</a>
       <div class="nav-links">
-        <span id="hints-used" class="badge">Hints: {{ player.hints_used }}</span>
-        <a href="/leaderboard">Board</a>
+        <span id="hints-used" class="badge">💡 Hints: {{ player.hints_used }}</span>
+        <a href="/leaderboard">🏆 Board</a>
       </div>
     </header>
 
-    <div class="card">
+    <main>
+    <section class="progress-panel" aria-label="Puzzle progress">
+      <div class="progress-copy"><span>YOUR PROGRESS</span><strong>Level {{ level.id }} <span class="muted">of {{ total_levels }}</span></strong></div>
+      <div class="progress-track" role="progressbar" aria-valuenow="{{ level.id }}" aria-valuemin="1" aria-valuemax="{{ total_levels }}" aria-label="Level {{ level.id }} of {{ total_levels }}">
+        <span style="width: {{ (level.id / total_levels * 100)|round }}%"></span>
+      </div>
+    </section>
+
+    <div class="card puzzle-card">
+      <div class="eyebrow"><span class="pulse-dot"></span> PUZZLE {{ "%02d"|format(level.id) }}</div>
       <h1>{{ level.title }}</h1>
+      <p class="muted puzzle-instructions">Take your time, look for patterns, and enter your best answer below.</p>
       <div class="clue-box">{{ level.clue_text }}</div>
 
       {% if level.asset %}
         <div class="asset-wrap">
-          <img src="{{ url_for('static', filename=level.asset) }}" alt="Level {{ level.id }} signal" />
+          <img src="{{ url_for('static', filename=level.asset) }}" alt="A visual clue for {{ level.title }}" />
         </div>
       {% endif %}
 
       <form id="submit-form">
-        <input id="answer-input" type="text" maxlength="100" placeholder="Enter your answer..." autocomplete="off" autocapitalize="none" required />
-        <button type="submit">Submit Answer</button>
+        <label for="answer-input">Your answer</label>
+        <input id="answer-input" type="text" maxlength="100" placeholder="Type your answer…" autocomplete="off" autocapitalize="none" aria-describedby="answer-help" required />
+        <p id="answer-help" class="field-help">Not case-sensitive. You can revise your answer any time.</p>
+        <button type="submit"><span>Check answer</span><span aria-hidden="true">→</span></button>
       </form>
 
-      <button id="hint-btn" type="button" class="secondary">Show Hint</button>
+      <button id="hint-btn" type="button" class="secondary">💡 Get a hint</button>
 
-      <div id="submit-feedback" class="feedback"></div>
+      <div id="submit-feedback" class="feedback" role="status" aria-live="polite"></div>
       <div id="hint-box" class="feedback {% if hint_text %}show hint{% endif %}">
         {% if hint_text %}Hint: {{ hint_text }}{% endif %}
       </div>
     </div>
+    </main>
   </div>
   <script src="{{ url_for('static', filename='app.js') }}"></script>
 </body>

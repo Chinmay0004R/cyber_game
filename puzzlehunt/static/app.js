@@ -34,12 +34,18 @@ if (joinForm) {
     const fb = document.getElementById("join-feedback");
     const btn = joinForm.querySelector("button");
     btn.disabled = true;
-    const res = await postJSON("/api/join", { name: nameInput.value });
-    btn.disabled = false;
-    if (res.ok) {
-      window.location.href = "/lobby";
-    } else {
-      showFeedback(fb, res.data.error || "Unable to join", "error");
+    try {
+      const res = await postJSON("/api/join", { name: nameInput.value });
+      if (res.ok) {
+        window.location.href = "/lobby";
+      } else {
+        showFeedback(fb, res.data.error || "Unable to join. Please try again.", "error");
+        nameInput.focus();
+      }
+    } catch (_) {
+      showFeedback(fb, "Couldn't reach the hunt. Check your connection and try again.", "error");
+    } finally {
+      btn.disabled = false;
     }
   });
 }
@@ -49,10 +55,12 @@ const lobbyRoot = document.getElementById("lobby-root");
 if (lobbyRoot) {
   const countEl = document.getElementById("lobby-count");
   const listEl = document.getElementById("lobby-players");
+  const feedbackEl = document.getElementById("lobby-feedback");
 
   async function pollLobby() {
     try {
       const res = await fetch("/api/lobby");
+      if (!res.ok) throw new Error("Lobby status unavailable");
       const data = await res.json();
       if (!data.me_exists) {
         window.location.href = "/";
@@ -66,9 +74,12 @@ if (lobbyRoot) {
         window.location.href = "/leaderboard";
         return;
       }
-      countEl.textContent = `${data.player_count} / ${data.max_players} players joined`;
+      countEl.textContent = `${data.player_count} / ${data.max_players} players`;
       listEl.innerHTML = data.players.map((n) => `<li>${escapeHtml(n)}</li>`).join("");
-    } catch (_) {}
+      feedbackEl.className = "feedback";
+    } catch (_) {
+      showFeedback(feedbackEl, "Having trouble refreshing the lobby. We’ll keep trying.", "error");
+    }
   }
 
   pollLobby();
@@ -88,19 +99,29 @@ if (submitForm) {
     e.preventDefault();
     const btn = submitForm.querySelector("button[type='submit']");
     btn.disabled = true;
-    const res = await postJSON("/api/submit", { answer: answerInput.value });
+    let res;
+    try {
+      res = await postJSON("/api/submit", { answer: answerInput.value });
+    } catch (_) {
+      showFeedback(fb, "Couldn't send your answer. Check your connection and try again.", "error");
+      btn.disabled = false;
+      return;
+    }
     btn.disabled = false;
 
     if (!res.ok) {
-      showFeedback(fb, res.data.error || "Error submitting answer", "error");
+      const message = res.status === 429
+        ? "One moment! Give it a second before trying again."
+        : (res.data.error || "Couldn't check that answer. Please try again.");
+      showFeedback(fb, message, "error");
       return;
     }
     if (!res.data.correct) {
-      showFeedback(fb, res.data.message || "Wrong, try again.", "error");
+      showFeedback(fb, "Not quite — give it another look. You’ve got this!", "error");
       answerInput.select();
       return;
     }
-    showFeedback(fb, "Correct! Advancing...", "success");
+    showFeedback(fb, res.data.finished ? "Brilliant! You solved the final puzzle. 🎉" : "That’s it! Next puzzle coming up… ✨", "success");
     setTimeout(() => {
       window.location.href = res.data.finished ? "/leaderboard" : "/level";
     }, 450);
@@ -109,11 +130,18 @@ if (submitForm) {
   if (hintBtn) {
     hintBtn.addEventListener("click", async () => {
       hintBtn.disabled = true;
-      const res = await postJSON("/api/hint");
-      hintBtn.disabled = false;
-      if (res.ok) {
-        showFeedback(hintBox, `Hint: ${res.data.hint}`, "hint");
-        if (hintsUsedEl) hintsUsedEl.textContent = `Hints: ${res.data.hints_used}`;
+      try {
+        const res = await postJSON("/api/hint");
+        if (res.ok) {
+          showFeedback(hintBox, `💡 Hint: ${res.data.hint}`, "hint");
+          if (hintsUsedEl) hintsUsedEl.textContent = `💡 Hints: ${res.data.hints_used}`;
+        } else {
+          showFeedback(hintBox, res.data.error || "Couldn't load a hint. Try again.", "error");
+        }
+      } catch (_) {
+        showFeedback(hintBox, "Couldn't reach the hint service. Check your connection and try again.", "error");
+      } finally {
+        hintBtn.disabled = false;
       }
     });
   }
@@ -128,6 +156,7 @@ if (lbBody) {
   async function refreshLeaderboard() {
     try {
       const res = await fetch("/api/leaderboard");
+      if (!res.ok) throw new Error("Leaderboard unavailable");
       const data = await res.json();
       if (statusBadge) {
         statusBadge.textContent = data.status.toUpperCase();
@@ -152,7 +181,9 @@ if (lbBody) {
       if (updatedEl) {
         updatedEl.textContent = `Updated ${new Date().toLocaleTimeString()}`;
       }
-    } catch (_) {}
+    } catch (_) {
+      if (updatedEl) updatedEl.textContent = "Couldn’t refresh — retrying…";
+    }
   }
 
   refreshLeaderboard();
